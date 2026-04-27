@@ -9,6 +9,7 @@ function App() {
   const [newItem, setNewItem] = useState('')
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [isInstalled, setIsInstalled] = useState(false)
+  const [debugInfo, setDebugInfo] = useState('')
 
   useEffect(() => {
     localStorage.setItem('checklist', JSON.stringify(items))
@@ -20,21 +21,37 @@ function App() {
 
     const handler = (e) => {
       e.preventDefault()
+      console.log('beforeinstallprompt capturado:', e)
       setDeferredPrompt(e)
+      setDebugInfo('Prompt disponível!')
     }
     window.addEventListener('beforeinstallprompt', handler)
+    
+    window.addEventListener('appinstalled', () => {
+      console.log('App instalado!')
+      setIsInstalled(true)
+      setDebugInfo('Instalado!')
+    })
+    
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return
+    if (!deferredPrompt) {
+      setDebugInfo('Sem prompt disponível')
+      return
+    }
     deferredPrompt.prompt()
     const { outcome } = await deferredPrompt.userChoice
+    console.log('Outcome:', outcome)
     if (outcome === 'accepted') {
       setDeferredPrompt(null)
       setIsInstalled(true)
     }
+    setShowInstall(false)
   }
+
+  const [showInstall, setShowInstall] = useState(false)
 
   const addItem = () => {
     if (newItem.trim()) {
@@ -51,7 +68,7 @@ function App() {
     setItems(items.filter(item => item.id !== id))
   }
 
-  const showInstallButton = !isInstalled && !!deferredPrompt
+  const showInstallButton = !isInstalled && (deferredPrompt || showInstall)
 
   return (
     <div className="app">
@@ -87,6 +104,7 @@ function App() {
           Instalar App
         </button>
       )}
+      {debugInfo && <p className="debug">{debugInfo}</p>}
     </div>
   )
 }
