@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 
 function App() {
@@ -8,17 +8,19 @@ function App() {
   })
   const [newItem, setNewItem] = useState('')
   const [deferredPrompt, setDeferredPrompt] = useState(null)
-  const [showInstall, setShowInstall] = useState(false)
+  const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('checklist', JSON.stringify(items))
   }, [items])
 
   useEffect(() => {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    setIsInstalled(isStandalone)
+
     const handler = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
-      setShowInstall(true)
     }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
@@ -30,8 +32,8 @@ function App() {
     const { outcome } = await deferredPrompt.userChoice
     if (outcome === 'accepted') {
       setDeferredPrompt(null)
+      setIsInstalled(true)
     }
-    setShowInstall(false)
   }
 
   const addItem = () => {
@@ -48,6 +50,8 @@ function App() {
   const deleteItem = (id) => {
     setItems(items.filter(item => item.id !== id))
   }
+
+  const showInstallButton = !isInstalled && !!deferredPrompt
 
   return (
     <div className="app">
@@ -78,14 +82,10 @@ function App() {
         ))}
         {items.length === 0 && <p className="empty">Nenhuma tarefa ainda</p>}
       </ul>
-      {showInstall && (
-        <div className="install-popup">
-          <p>Instalar aplicativo?</p>
-          <div className="install-buttons">
-            <button onClick={handleInstall}>Instalar</button>
-            <button onClick={() => setShowInstall(false)}>Mais tarde</button>
-          </div>
-        </div>
+      {showInstallButton && (
+        <button className="install-btn" onClick={handleInstall}>
+          Instalar App
+        </button>
       )}
     </div>
   )
